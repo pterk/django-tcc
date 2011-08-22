@@ -1,0 +1,24 @@
+<li class="comment user-{{ c.user_id }}">
+  <a name="{{ c.get_base36() }}"></a>
+  {{ c.comment|safe }}
+  <p class="info">
+    {% trans %}by{% endtrans %} <a class="c-user" href="#">{{ c.user }}</a>
+    | <span class="c-date">{{ c.submit_date|date("Y-m-d H:i") }}</span>
+    {% if c.reply_allowed() %}
+    {# todo : fallback for no js #}
+    <span class="comment-reply" style="display:none">
+      | <a id="post-{{ c.id }}" href="#" title="{% trans %}reply{% endtrans %}">{% trans %}reply{% endtrans %}</a>
+    </span>
+    {% endif %}
+    <span class="comment-remove comment-remove-{{ c.user.id }}{% for u in c.get_enabled_users('remove') %} comment-remove-{{ u.id }}{% endfor %}" style="display:none">
+      | <a href="{% url tcc_remove c.id %}" title="{% trans %}remove{% endtrans %}">{% trans %}remove{% endtrans %}</a>
+    </span>
+  </p>
+  {#
+  The following construction will close the li if doclose is NOT set (a reasonable default)
+
+  It will leave the li 'open' though if doclose is set to something truthy which is what is needed list-comments.html
+  #}
+  {% if not doclose %}
+</li>
+{% endif %}

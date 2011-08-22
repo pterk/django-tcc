@@ -1,0 +1,40 @@
+ul, li {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+#tcc li {
+    margin-bottom: 1em;
+    margin-top: 10px;
+    padding-top: 10px;
+    position: relative;
+    min-height: 3em;
+}
+
+#tcc .replies li {
+    margin-top: .5em;
+    padding-left: 3em;
+}
+
+#tcc .comment-remove, #tcc .comment-reply {
+    display: none;
+}
+
+#tcc form #id_honeypot {
+    display: none;
+}
+
+#tcc .remove-form {
+    color: red;
+    font-weight: bold;
+    margin: 1em 0;
+}
+
+#tcc ul.errors li {
+    margin: 0;
+    margin-top: 10px;
+    padding: 0;
+    color: red;
+    min-height: 0;
+}
