@@ -5,7 +5,7 @@ from django.core.urlresolvers import reverse
 from django.conf import settings
 from django.http import (HttpResponseBadRequest, HttpResponseRedirect,
                          HttpResponse, Http404)
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.template import RequestContext
 from django.utils import simplejson
 from django.utils.translation import ugettext as _
