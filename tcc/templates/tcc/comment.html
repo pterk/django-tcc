@@ -13,6 +13,7 @@
     <span class="comment-remove comment-remove-{{ c.user.id }}{% for u in c.get_enabled_users('remove') %} comment-remove-{{ u.id }}{% endfor %}" style="display:none">
       | <a href="{% url tcc_remove c.id %}" title="{% trans %}remove{% endtrans %}">{% trans %}remove{% endtrans %}</a>
     </span>
+    | <a href="{% url tcc_thread c.get_root_id() %}#{{ c.get_base36() }}" title="permalink">#</a>
   </p>
   {#
   The following construction will close the li if doclose is NOT set (a reasonable default)
