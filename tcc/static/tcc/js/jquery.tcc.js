@@ -17,7 +17,7 @@
             init();
         });
     };
-                        
+
     // Default width and height for the editor
     $.fn.tcc.defaults = {
         user_id: null,
@@ -34,7 +34,7 @@
     };
 
     function listErrors(frm, errors){
-        if($('ul.errors', frm).length == 0){ 
+        if($('ul.errors', frm).length == 0){
             $(frm).prepend('<ul class="errors"/>');
         };
         $('ul.errors', frm).empty();
@@ -47,18 +47,17 @@
     };
 
     function isScrolledIntoView(elem){
-      var docViewTop = $(window).scrollTop();
-      var docViewBottom = docViewTop + $(window).height();
-      var elemTop = $(elem).offset().top;
-      var elemBottom = elemTop + $(elem).height();
-      return ((elemBottom >= docViewTop) && (elemTop <= docViewBottom));
+        var docViewTop = $(window).scrollTop();
+        var docViewBottom = docViewTop + $(window).height();
+        var elemTop = $(elem).offset().top;
+        var elemBottom = elemTop + $(elem).height();
+        return ((elemBottom >= docViewTop) && (elemTop <= docViewBottom));
     };
 
     function apply_hooks(){
 
         // highlight a thread
         if(window.location.hash){
-            debug(window.location.hash);
             $('a[name="' + window.location.hash.slice(1) +'"]').each(function(){
                 $(this).parent().addClass('highlight');
             });
@@ -82,11 +81,11 @@
         };
 
         function date_format(dte){
-            var y=dte.getYear(), m=dte.getMonth(), d=dte.getDay(),
+            var y=dte.getFullYear(), m=dte.getMonth()+1, d=dte.getDate(),
             h = dte.getHours(), m = dte.getMinutes(), s = dte.getSeconds();
-            if (d < 10) { d = '0' + dd; };
-            if (m < 10) { m = '0' + m; }; 
-            if (s < 10) { s = '0' + s; }; 
+            if (d < 10) { d = '0' + d; };
+            if (m < 10) { m = '0' + m; };
+            if (s < 10) { s = '0' + s; };
             return [y,m,d].join('-')+' '+[h, m].join(':');
         };
 
@@ -100,12 +99,20 @@
                 var datetime = $(this).text().split(' ');
                 var dte = datetime[0].split('-');
                 var tme = datetime[1].split(':');
+
+                // Be sure to use parseInt with Base 10 or '08' and
+                // '09' will be interpreted as 0 and that will produce
+                // `much weirdness`
+
                 // This is a UTC time
-                dte = new Date(parseInt(dte[0]), parseInt(dte[1]) - 1, parseInt(dte[2]),
-                               parseInt(tme[0]), parseInt(tme[1]));
+                dte = new Date(parseInt(dte[0], 10), (parseInt(dte[1], 10) - 1), parseInt(dte[2], 10),
+                               parseInt(tme[0], 10), parseInt(tme[1], 10), 0);
+                // Now it's localtime
                 dte = make_local_time(dte);
+
                 var humandate = '';
                 var n = days_ago(dte);
+
                 switch(true){
                 case n==0:
                     if (is_nowish(dte)) {
@@ -129,7 +136,7 @@
                 $(this).text(humandate);
                 $(this).addClass('humanized');
             } catch (e) {
-                // pass
+                debug(e);
             };
         });
 
@@ -140,16 +147,19 @@
                 $('form', parent).remove();
                 var action = $('a', this).attr('href');
                 var frm = $('.remove-form').last().clone();
-                $('a.remove-cancel', frm).click(function(){ 
-                    frm.remove(); 
+                $('a.remove-cancel', frm).click(function(){
+                    frm.remove();
                     return false;
                 });
                 frm.submit(function(){
+                    $('body').css({'cursor': 'wait'});
                     $.post(action, $(this).serialize(), function(){
+                        $('body').css({'cursor': 'auto'});
                         frm.remove();
                         parent.remove();
                     });
                     $(frm).ajaxError(function(ev, xhr, req, error_message){
+                        $('body').css({'cursor': 'auto'});
                         listErrors(frm, $.parseJSON(xhr.responseText));
                     });
                     return false;
@@ -166,14 +176,17 @@
                 var frm = $('#tcc form').first().clone();
                 $('#id_parent', frm).val($('a', this).attr('id').slice(5));
                 $(frm).submit(function(){
+                    $('body').css({'cursor': 'wait'});
                     $.post($(this).attr('action'), $(this).serialize(), function(comment){
                         frm.remove();
                         if($('ul.replies', parent).length == 0){ $(parent).append('<ul class="replies"/>');}
                         $('ul.replies', parent).append(comment);
                         apply_hooks();
+                        $('body').css({'cursor': 'auto'});
                     });
                     $(frm).ajaxError(function(ev, xhr, req, error_message){
                         listErrors(frm, $.parseJSON(xhr.responseText));
+                        $('body').css({'cursor': 'auto'});
                     });
                     return false;
                 });
@@ -188,6 +201,8 @@
     };
 
     function init(){
+
+
         // showall is enable for everyone
         $('a.showall').click(function(){
             var parent = $(this).parent();
@@ -206,9 +221,21 @@
         if ( opts.user_id ) {
             // run this only once
             var frm = $('#tcc form').first();
+            frm.css({"display": 'block'});
             $(frm).submit(function(){
+                $('body').css({'cursor': 'wait'});
+                // clean up any pre-existing errors (from previous submit)
+                $('ul.errors', frm).remove();
                 $.post($(this).attr('action'), $(this).serialize(), function(data){
-                    $('ul#tcc li').first().before(data);
+                    $('body').css({'cursor': 'auto'});
+                    if( $('ul#tcc li').length == 0){
+                        // There were no comments so far, so this is the first comment
+                        // Remove the 'no comments yet' message
+                        $('ul#tcc').children().not('form').remove();
+                        $('ul#tcc').append(data);
+                    } else {
+                        $('ul#tcc li').first().before(data);
+                    }
                     apply_hooks();
                     $('#id_comment', frm).val('');
                     var latest = $('ul#tcc li.comment').first();
@@ -217,10 +244,14 @@
                     };
                 });
                 $(frm).ajaxError(function(ev, xhr, req, error_message){
+                    $('body').css({'cursor': 'auto'});
                     listErrors(frm, $.parseJSON(xhr.responseText));
                 });
                 return false;
             });
+        } else {
+            // Not logged in
+            $('#no-comment-form').css({'display': 'inline'});
         };
     };
 
