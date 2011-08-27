@@ -20,20 +20,22 @@ class CommentForm(forms.ModelForm):
     honeypot = forms.CharField(
         required=False,
         label=_('If you enter anything in this field '\
-                    'your comment will be treated as spam'))
+                    'your comment will be treated as spam')
+        )
 
     class Meta:
         model = Comment
-        exclude = ['submit_date', 'is_open', 'is_removed', 'is_approved', 
+        exclude = ['submit_date', 'is_open', 'is_removed', 'is_approved',
                    'is_public', 'site', 'limit', 'path', 'user_name',
-                   'user_email', 'user_url', 'comment_raw', 'childcount', 'depth']
+                   'user_email', 'user_url', 'comment_raw', 'childcount',
+                   'depth', 'subscribers']
         widgets = {
             'content_type': forms.HiddenInput,
             'object_pk': forms.HiddenInput,
             'user': forms.HiddenInput,
             'parent': forms.HiddenInput,
             }
-        
+
     def __init__(self, target_object, data=None, initial=None):
         self.target_object = target_object
         if initial is None:
@@ -105,7 +107,7 @@ class CommentForm(forms.ModelForm):
             'content_type' : str(self.content_type),
             'object_pk' : str(self.target_object._get_pk_val()),
             'timestamp' : str(timestamp),
-          }
+            }
         return self.generate_security_hash(**initial_security_dict)
 
     def generate_security_hash(self, content_type, object_pk, timestamp):

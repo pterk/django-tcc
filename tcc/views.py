@@ -12,8 +12,8 @@ from django.utils.translation import ugettext as _
 from django.views.decorators.http import require_POST
 
 from tcc import api
-from tcc.settings import CONTENT_TYPES
 from tcc.forms import CommentForm
+from tcc.utils import get_content_types
 
 # jinja
 from coffin.shortcuts import render_to_response
@@ -30,7 +30,7 @@ def _get_tcc_index(comment):
 
 
 def _get_comment_form(content_type_id, object_pk, data=None):
-    if not content_type_id or int(content_type_id) not in CONTENT_TYPES:
+    if not content_type_id or int(content_type_id) not in get_content_types():
         raise Http404()
     ct = get_object_or_404(ContentType, pk=content_type_id)
     try:

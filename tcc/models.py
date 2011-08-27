@@ -13,7 +13,7 @@ from django.utils.http import base36_to_int, int_to_base36
 from django.utils.translation import ugettext_lazy as _
 
 from tcc.settings import (
-    STEPLEN, COMMENT_MAX_LENGTH, MODERATED, REPLY_LIMIT, CONTENT_TYPES,
+    STEPLEN, COMMENT_MAX_LENGTH, MODERATED, REPLY_LIMIT,
     MAX_DEPTH, MAX_REPLIES, ADMIN_CALLBACK
     )
 from tcc.managers import (
@@ -76,6 +76,8 @@ class Comment(models.Model):
     path = models.CharField(_('Path'), unique=True, max_length=MAX_DEPTH*STEPLEN)
     limit = models.DateTimeField(
         _('Show replies from'), null=True, blank=True)
+    # subscription (for notification)
+    subscribers = models.ManyToManyField(User, related_name="thread_subscribers")
     # denormalized cache
     childcount = models.IntegerField(_('Reply count'), default=0)
     depth = models.IntegerField(_('Depth'), default=0)
@@ -257,4 +259,5 @@ class Comment(models.Model):
                           'approve', 'disapprove']
         func = get_callable(ADMIN_CALLBACK)
         return func(self, action)
+
 

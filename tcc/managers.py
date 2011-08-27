@@ -1,6 +1,6 @@
 from django.db.models import Manager, F, Q
 
-from tcc.settings import CONTENT_TYPES
+from tcc.utils import get_content_types
 
 
 class CurrentCommentManager(Manager):
@@ -14,7 +14,7 @@ class CurrentCommentManager(Manager):
         return super(CurrentCommentManager, self).get_query_set(
             *args, **kwargs).filter(
             is_removed=False, is_approved=True, is_public=True,
-            content_type__id__in=CONTENT_TYPES
+            content_type__id__in=get_content_types()
             ).filter(
                 Q(parent__isnull=True) | \
                     Q(parent__is_removed=False,

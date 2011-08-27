@@ -5,7 +5,7 @@ from coffin.template.loader import render_to_string
 
 from tcc import api
 from tcc.forms import CommentForm
-from tcc.settings import CONTENT_TYPES
+from tcc.utils import get_content_types
 
 register = template.Library()
 
@@ -13,7 +13,7 @@ register = template.Library()
 @register.simple_tag(takes_context=True)
 def get_comments_for_object(context, object, next=None):
     ct = ContentType.objects.get_for_model(object)
-    if ct.id not in CONTENT_TYPES:
+    if ct.id not in get_content_types():
         return 'Not supported'
     comments = api.get_comments(ct.id, object.pk)
     comments = comments.order_by('-submit_date')
