@@ -113,8 +113,17 @@
     {% csrf_token %}
     {% trans %}Are you sure you want to delete this comment?{% endtrans %}
     <input type="submit" name="remove-submit" value="{% trans %}Yes{% endtrans %}">
-    <a class="remove-cancel" href="#">{% trans %}Cancel{% endtrans %}
+    <a class="remove-cancel" href="#">{% trans %}Cancel{% endtrans %}</a>
   </form>
+
+  <form class="unsubscribe-form" action="" method="post" style="display:none">
+    {% csrf_token %}
+    {% trans %}<p>If you continue, you will no longer receive emails to notify you of new messages in this thread.
+      Do you want to continue?{% endtrans %}</p>
+    <input type="submit" name="unsubscribe-submit" value="{% trans %}Yes{% endtrans %}">
+    <a class="unsubscribe-cancel" href="#">{% trans %}Cancel{% endtrans %}</a>
+  </form>
+
 </ul>
 
 <script type="text/javascript">

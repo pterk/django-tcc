@@ -124,6 +124,12 @@ def get_comment_parents(comment_id):
         return c.get_parents()
 
 
+def get_comment_thread_root(comment_id):
+    c = get_comment(comment_id)
+    if c:
+        return c.get_root()
+
+
 def remove_comment(comment_id, user):
     """ mark comment as removed """
     c = get_comment(comment_id)
@@ -192,6 +198,20 @@ def close_comment(comment_id, user):
         c.is_open = False
         c.save()
     return c
+
+
+def subscribe(comment_id, user):
+    r = get_comment_thread_root(comment_id)
+    if r:
+        r.subscribers.add(user)
+    return r
+
+
+def unsubscribe(comment_id, user):
+    r = get_comment_thread_root(comment_id)
+    if r:
+        r.subscribers.remove(user)
+    return r
 
 
 def get_user_comments(user_id,

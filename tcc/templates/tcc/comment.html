@@ -13,6 +13,11 @@
     <span class="comment-remove comment-remove-{{ c.user.id }}{% for u in c.get_enabled_users('remove') %} comment-remove-{{ u.id }}{% endfor %}" style="display:none">
       | <a href="{% url tcc_remove c.id %}" title="{% trans %}remove{% endtrans %}">{% trans %}remove{% endtrans %}</a>
     </span>
+    {% if not c.parent %}
+    <span class="comment-unsubscribe {% for u in c.subscribers.all() %} comment-unsubscribe-{{ u.id }}{% endfor %}" style="display:none">
+      | <a href="{% url tcc_unsubscribe c.id %}" title="{% trans %}unsubscribe{% endtrans %}">{% trans %}unsubscribe{% endtrans %}</a>
+    </span>
+    {% endif %}
     | <a href="{% url tcc_thread c.get_root_id() %}#{{ c.get_base36() }}" title="permalink">#</a>
   </p>
   {#

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -14,7 +14,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from tcc.settings import (
     STEPLEN, COMMENT_MAX_LENGTH, MODERATED, REPLY_LIMIT,
-    MAX_DEPTH, MAX_REPLIES, ADMIN_CALLBACK
+    MAX_DEPTH, MAX_REPLIES, ADMIN_CALLBACK, SUBSCRIBE_ON_POST
     )
 from tcc.managers import (
     CurrentCommentManager, LimitedCurrentCommentManager,
@@ -23,6 +23,7 @@ from tcc.managers import (
 
 SITE_ID = getattr(settings, 'SITE_ID', 1)
 
+TWO_MINS = timedelta(minutes=2)
 
 class Thread(models.Model):
     content_type = models.ForeignKey(
@@ -59,6 +60,7 @@ class Comment(models.Model):
                                null=True, blank=True, related_name='parents')
     user = models.ForeignKey(User, verbose_name='Commenter')
     # These are here mainly for backwards compatibility
+    ip_address = models.IPAddressField(default='127.0.0.1')
     user_name   = models.CharField(_("user's name"), max_length=50, blank=True)
     user_email  = models.EmailField(_("user's email address"), blank=True)
     user_url    = models.URLField(_("user's URL"), blank=True)
@@ -101,14 +103,36 @@ class Comment(models.Model):
         return "%s#%s" % (link, self.get_base36())
 
     def clean(self):
+
         if self.parent:
             if not self.pk and self.parent.childcount >= self.MAX_REPLIES:
                 raise ValidationError(_('Maximum number of replies reached'))
         if self.comment <> "" and striptags(self.comment).strip() == "":
             raise ValidationError(_("This field is required."))
 
+        if not self.comment_raw:
+            self.comment_raw = self.comment
+
+        # Check for identical messages
+        identical_msgs = Comment.objects.filter(
+            content_type=self.content_type,
+            object_pk=self.object_pk,
+            user=self.user,
+            comment_raw=self.comment_raw,
+            submit_date__gte=(datetime.utcnow() - TWO_MINS),
+            )
+
+        if self.id:
+            identical_msgs = identical_msgs.exclude(id=self.id)
+
+        if identical_msgs.count() > 0:
+            raise ValidationError(_("You just posted the exact same content."))
+
     def get_root_path(self):
-        return self.path[0:STEPLEN]
+        if self.path:
+            return self.path[0:STEPLEN]
+        # The path isn't save yet: calculate it
+        return self._get_path()[0:STEPLEN]
 
     # The following two methods may seem superfluous and/or convoluted
     # but they get the root.id of any 'node' without hitting the
@@ -141,7 +165,7 @@ class Comment(models.Model):
     def get_root(self):
         if self.parent:
             return Comment.objects.get(path=self.get_root_path())
-        return None
+        return self
 
     def get_parents(self):
         if self.parent:
@@ -152,17 +176,6 @@ class Comment(models.Model):
             return Comment.objects.filter(path__in=parentpaths)
         else:
             return Comment.objects.none()
-
-    def has_changed(self, field):
-        """ Checks if a field has changed since the last save
-
-        http://zmsmith.com/2010/05/django-check-if-a-field-has-changed/
-        """
-        if not self.pk:
-            return False
-        old_value = self.__class__._default_manager.\
-            filter(pk=self.pk).values(field).get()[field]
-        return not getattr(self, field) == old_value
 
     def save(self, *args, **kwargs):
 
@@ -227,6 +240,12 @@ class Comment(models.Model):
     def get_base36(self):
         return int_to_base36(self.id)
 
+    def _get_path(self):
+        if self.parent:
+            return "%s%s" % (self.parent.path, self.get_base36().zfill(STEPLEN))
+        else:
+            return "%s" % (self.get_base36().zfill(STEPLEN))
+
     def _set_path(self):
         """ This will set the path to a base36 encoding of the comment-id
 
@@ -243,11 +262,7 @@ class Comment(models.Model):
         9223372036854775808L
 
         """
-        if self.parent:
-            self.path = "%s%s" % (self.parent.path, self.get_base36().zfill(STEPLEN))
-        else:
-            self.path = "%s" % (self.get_base36().zfill(STEPLEN))
-
+        self.path = self._get_path()
         self.depth = self.get_depth()
 
         self.save()

@@ -163,3 +163,27 @@ def restore(request, comment_id):
     if comment:
         return HttpResponseRedirect(comment.get_absolute_url())
     raise Http404()
+
+
+@login_required
+@require_POST
+def subscribe(request, comment_id):
+    comment = api.subscribe(comment_id, request.user)
+    if comment:
+        if request.is_ajax():
+            return HttpResponse() # 200 OK
+        tcc_index = _get_tcc_index(comment)
+        return HttpResponseRedirect(tcc_index)
+    raise Http404()
+
+
+@login_required
+@require_POST
+def unsubscribe(request, comment_id):
+    comment = api.unsubscribe(comment_id, request.user)
+    if comment:
+        if request.is_ajax():
+            return HttpResponse() # 200 OK
+        tcc_index = _get_tcc_index(comment)
+        return HttpResponseRedirect(tcc_index)
+    raise Http404()

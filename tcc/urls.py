@@ -14,7 +14,9 @@ urlpatterns = patterns(
     url(r'^disapprove/(?P<comment_id>\d+)/$', 'disapprove',
         name='tcc_disapprove'),
     url(r'^flag/(?P<comment_id>\d+)/$', 'flag', name='tcc_flag'),
-    url(r'^flag/(?P<comment_id>\d+)/$', 'unflag', name='tcc_unflag'),
+    url(r'^unflag/(?P<comment_id>\d+)/$', 'unflag', name='tcc_unflag'),
+    url(r'^subscribe/(?P<comment_id>\d+)/$', 'subscribe', name='tcc_subscribe'),
+    url(r'^unsubscribe/(?P<comment_id>\d+)/$', 'unsubscribe', name='tcc_unsubscribe'),
     )
 
 urlpatterns += patterns(

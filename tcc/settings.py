@@ -15,6 +15,7 @@ ADMIN_CALLBACK = getattr(settings, 'TCC_ADMIN_CALLBACK', None)
 COMMENT_MAX_LENGTH = getattr(settings,'COMMENT_MAX_LENGTH',3000)
 MODERATED = getattr(settings, 'TCC_MODERATE', False)
 CONTENT_TYPES = getattr(settings, 'TCC_CONTENT_TYPES', [])
+SUBSCRIBE_ON_POST = True
 
 
 # Wow ... weirdness occurs without the following monkeypatch for python2.6

@@ -153,14 +153,48 @@
                 });
                 frm.submit(function(){
                     $('body').css({'cursor': 'wait'});
+                    $('.notify', frm).text('removing...');
                     $.post(action, $(this).serialize(), function(){
                         $('body').css({'cursor': 'auto'});
+                        $('.notify', frm).text('');
                         frm.remove();
                         parent.remove();
                     });
                     $(frm).ajaxError(function(ev, xhr, req, error_message){
                         $('body').css({'cursor': 'auto'});
+                        $('.notify', frm).text('');
                         listErrors(frm, $.parseJSON(xhr.responseText));
+                    });
+                    return false;
+                });
+                frm.css({'display': 'block'});
+                parent.append(frm);
+                return false;
+            });
+
+            $('.comment-unsubscribe-'+opts.user_id).css({'display': 'inline'});
+            $('.comment-unsubscribe').click(function(){
+                var parent = $(this).parent().parent();
+                $('form', parent).remove();
+                var action = $('a', this).attr('href');
+                var frm = $('.unsubscribe-form').last().clone();
+                $('a.unsubscribe-cancel', frm).click(function(){
+                    frm.remove();
+                    return false;
+                });
+                frm.submit(function(){
+                    $('body').css({'cursor': 'wait'});
+                    $('.notify', frm).text('unsubscribing...');
+                    $.post(action, $(this).serialize(), function(){
+                        $('body').css({'cursor': 'auto'});
+                        $('.notify', frm).text('');
+                        frm.remove();
+                        $('.comment-unsubscribe').remove();
+                    });
+                    $(frm).ajaxError(function(ev, xhr, req, error_message){
+                        listErrors(frm, $.parseJSON(xhr.responseText));
+                        $('body').css({'cursor': 'auto'});
+                        $('.notify', frm).text('');
                     });
                     return false;
                 });
@@ -177,16 +211,19 @@
                 $('#id_parent', frm).val($('a', this).attr('id').slice(5));
                 $(frm).submit(function(){
                     $('body').css({'cursor': 'wait'});
+                    $('.notify', frm).text('Posting your comment...');
                     $.post($(this).attr('action'), $(this).serialize(), function(comment){
                         frm.remove();
                         if($('ul.replies', parent).length == 0){ $(parent).append('<ul class="replies"/>');}
                         $('ul.replies', parent).append(comment);
                         apply_hooks();
                         $('body').css({'cursor': 'auto'});
+                        $('.notify', frm).text('');
                     });
                     $(frm).ajaxError(function(ev, xhr, req, error_message){
                         listErrors(frm, $.parseJSON(xhr.responseText));
                         $('body').css({'cursor': 'auto'});
+                        $('.notify', frm).text('');
                     });
                     return false;
                 });
@@ -224,10 +261,12 @@
             frm.css({"display": 'block'});
             $(frm).submit(function(){
                 $('body').css({'cursor': 'wait'});
+                $('.notify', frm).text('Posting your comment...');
                 // clean up any pre-existing errors (from previous submit)
                 $('ul.errors', frm).remove();
                 $.post($(this).attr('action'), $(this).serialize(), function(data){
                     $('body').css({'cursor': 'auto'});
+                    $('.notify', frm).text('');
                     if( $('ul#tcc li').length == 0){
                         // There were no comments so far, so this is the first comment
                         // Remove the 'no comments yet' message
@@ -245,6 +284,7 @@
                 });
                 $(frm).ajaxError(function(ev, xhr, req, error_message){
                     $('body').css({'cursor': 'auto'});
+                    $('.notify', frm).text('');
                     listErrors(frm, $.parseJSON(xhr.responseText));
                 });
                 return false;
