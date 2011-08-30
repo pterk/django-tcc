@@ -1,10 +1,9 @@
 from setuptools import setup, find_packages
 
-version = '0.1'
 
 setup(
     name='tcc',
-    version=version,
+    version="0.2",
     description="Simple but effective comments app",
     #long_description=open('readme').read(),
     keywords='',

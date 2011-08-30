@@ -1,4 +1,3 @@
-__version__= '0.1'
 from django.core.urlresolvers import reverse
 
 from tcc.models import Comment
@@ -41,4 +40,3 @@ def get_undelete_url(comment):
 
 def get_disapprove_url(comment):
     return reverse('tcc_disapprove', args=[comment.id])
-
