@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='tcc',
-    version="0.2",
+    version="0.3",
     description="Simple but effective comments app",
     #long_description=open('readme').read(),
     keywords='',
