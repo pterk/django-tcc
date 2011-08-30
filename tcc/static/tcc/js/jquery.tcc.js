@@ -6,9 +6,8 @@
     var JSMINUTE = 60*1000; // milliseconds
     var JSHOUR = 60*JSMINUTE
     var JSDAY = 24*JSHOUR
-    //
+
     // plugin definition
-    //
     $.fn.tcc = function(options){
         // build main options before element iteration
         opts = $.extend({}, $.fn.tcc.defaults, options);
@@ -18,15 +17,13 @@
         });
     };
 
-    // Default width and height for the editor
+    // defaults
     $.fn.tcc.defaults = {
         user_id: null,
         user_name: null,
     };
 
-    //
     // private function for debugging
-    //
     function debug(msg) {
         if(window.console && window.console.log){
             window.console.log(msg);
@@ -63,6 +60,7 @@
             });
         };
 
+        // humanize
         if(opts.user_name){
             $('.c-user').filter(function(){
                 return $(this).text() == opts.user_name
@@ -140,6 +138,15 @@
             };
         });
 
+        // pagination
+        $('#tcc .pagination a').click(function(){
+            $.get($(this).attr('href'), function(data){
+                $('#tcc').replaceWith(data);
+                apply_hooks();
+            });
+            return false;
+        });
+
         if(opts.user_id){
             $('.comment-remove-'+opts.user_id).css({'display': 'inline'});
             $('.comment-remove').click(function(){
@@ -189,7 +196,7 @@
                         $('body').css({'cursor': 'auto'});
                         $('.notify', frm).text('');
                         frm.remove();
-                        $('.comment-unsubscribe').remove();
+                        $('.comment-unsubscribe', parent).remove();
                     });
                     $(frm).ajaxError(function(ev, xhr, req, error_message){
                         listErrors(frm, $.parseJSON(xhr.responseText));
@@ -207,7 +214,8 @@
             $('.comment-reply').click(function(){
                 var parent = $(this).parent().parent();
                 $('form', parent).remove();
-                var frm = $('#tcc form').first().clone();
+                var frm = $('#tcc form').first().clone(false);
+                $('ul.errors', frm).empty();
                 $('#id_parent', frm).val($('a', this).attr('id').slice(5));
                 $(frm).submit(function(){
                     $('body').css({'cursor': 'wait'});
