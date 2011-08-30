@@ -117,8 +117,6 @@ class Comment(models.Model):
 
         # Check for identical messages
         identical_msgs = Comment.objects.filter(
-            content_type=self.content_type,
-            object_pk=self.object_pk,
             user=self.user,
             comment_raw=self.comment_raw,
             submit_date__gte=(datetime.utcnow() - TWO_MINS),
