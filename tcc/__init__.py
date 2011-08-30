@@ -1,16 +1,15 @@
 __version__= '0.2'
 from django.core.urlresolvers import reverse
 
-from tcc.models import Comment
-from tcc.forms import CommentForm
-
 
 # django comment-app api
 def get_model():
+    from tcc.models import Comment
     return Comment
 
 
 def get_form():
+    from tcc.forms import CommentForm
     return CommentForm
 
 

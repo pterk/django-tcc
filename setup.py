@@ -2,6 +2,7 @@ from setuptools import setup, find_packages
 
 from tcc import __version__
 
+
 setup(
     name='tcc',
     version=__version__,
