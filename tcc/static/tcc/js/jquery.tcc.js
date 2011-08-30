@@ -221,12 +221,12 @@
                     $('body').css({'cursor': 'wait'});
                     $('.notify', frm).text('Posting your comment...');
                     $.post($(this).attr('action'), $(this).serialize(), function(comment){
-                        frm.remove();
                         if($('ul.replies', parent).length == 0){ $(parent).append('<ul class="replies"/>');}
                         $('ul.replies', parent).append(comment);
-                        apply_hooks();
                         $('body').css({'cursor': 'auto'});
                         $('.notify', frm).text('');
+                        frm.remove();
+                        apply_hooks();
                     });
                     $(frm).ajaxError(function(ev, xhr, req, error_message){
                         listErrors(frm, $.parseJSON(xhr.responseText));
