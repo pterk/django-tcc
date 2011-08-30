@@ -12,18 +12,20 @@ from django.template.defaultfilters import striptags
 from django.utils.http import base36_to_int, int_to_base36
 from django.utils.translation import ugettext_lazy as _
 
-from tcc.settings import (
-    STEPLEN, COMMENT_MAX_LENGTH, MODERATED, REPLY_LIMIT,
-    MAX_DEPTH, MAX_REPLIES, ADMIN_CALLBACK, SUBSCRIBE_ON_POST
-    )
 from tcc.managers import (
     CurrentCommentManager, LimitedCurrentCommentManager,
     RemovedCommentManager, DisapprovedCommentManager,
+    )
+from tcc import signals
+from tcc.settings import (
+    STEPLEN, COMMENT_MAX_LENGTH, MODERATED, REPLY_LIMIT,
+    MAX_DEPTH, MAX_REPLIES, ADMIN_CALLBACK, SUBSCRIBE_ON_POST
     )
 
 SITE_ID = getattr(settings, 'SITE_ID', 1)
 
 TWO_MINS = timedelta(minutes=2)
+
 
 class Thread(models.Model):
     content_type = models.ForeignKey(
@@ -184,15 +186,33 @@ class Comment(models.Model):
         else:
             is_new = True
 
+            responses = signals.comment_will_be_posted.send(
+                sender  = self.__class__, comment = self)
+        
+            for (receiver, response) in responses:
+                if response == False:
+                    raise ValidationError('Comment blocked by `comment_will_be_posted` listener.')
+
         self.clean()
 
         super(Comment, self).save(*args, **kwargs)
 
         if is_new:
+
             self._set_path()
 
-        if REPLY_LIMIT and self.parent:
-            self.parent.set_limit()
+            if REPLY_LIMIT and self.parent:
+                self.parent.set_limit()
+
+            # Sending this signal so *it* can be handled rather than
+            # post_save which is triggered 'too soon': before
+            # self.path is saved.  If there is an exception in a
+            # post_save handler the path is never set and the database
+            # will refuse to save another comment which is quite bad
+            # for a commenting system.
+            responses = signals.comment_was_posted.send(
+                sender  = self.__class__, comment = self)
+        
 
     def delete(self, *args, **kwargs):
         self.get_replies(include_self=True).delete()
@@ -274,5 +294,3 @@ class Comment(models.Model):
                           'approve', 'disapprove']
         func = get_callable(ADMIN_CALLBACK)
         return func(self, action)
-
-
