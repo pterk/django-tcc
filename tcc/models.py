@@ -21,6 +21,7 @@ from tcc.settings import (
     STEPLEN, COMMENT_MAX_LENGTH, MODERATED, REPLY_LIMIT,
     MAX_DEPTH, MAX_REPLIES, ADMIN_CALLBACK, SUBSCRIBE_ON_POST
     )
+from django.utils.safestring import mark_safe
 
 SITE_ID = getattr(settings, 'SITE_ID', 1)
 
@@ -94,6 +95,17 @@ class Comment(models.Model):
 
     class Meta:
         ordering = ['path']
+        
+        
+    def get_parsed_comment(self):
+        if settings.DEBUG:
+            from threaded_comments.handlers import render_comment
+            raw_comment = self.comment_raw
+            parsed_comment = render_comment(raw_comment)
+        else:
+            parsed_comment = self.comment
+        safe_comment = mark_safe(parsed_comment)
+        return safe_comment
 
     def __unicode__(self):
         return u"%05d %s % 8s: %s" % (
