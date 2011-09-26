@@ -21,6 +21,7 @@ from tcc.settings import (
     STEPLEN, COMMENT_MAX_LENGTH, MODERATED, REPLY_LIMIT,
     MAX_DEPTH, MAX_REPLIES, ADMIN_CALLBACK, SUBSCRIBE_ON_POST
     )
+from django.utils.safestring import mark_safe
 
 SITE_ID = getattr(settings, 'SITE_ID', 1)
 
@@ -94,6 +95,14 @@ class Comment(models.Model):
 
     class Meta:
         ordering = ['path']
+        
+    def get_parsed_comment(self, reparse=settings.DEBUG):
+        if reparse:
+            signals.comment_will_be_posted.send(
+                sender = self.__class__, comment = self)
+        parsed_comment = self.comment
+        safe_comment = mark_safe(parsed_comment)
+        return safe_comment
 
     def __unicode__(self):
         return u"%05d %s % 8s: %s" % (
@@ -112,13 +121,10 @@ class Comment(models.Model):
         if self.comment <> "" and striptags(self.comment).strip() == "":
             raise ValidationError(_("This field is required."))
 
-        if not self.comment_raw:
-            self.comment_raw = self.comment
-
         # Check for identical messages
         identical_msgs = Comment.objects.filter(
             user=self.user,
-            comment_raw=self.comment_raw,
+            comment_raw=self.comment,
             submit_date__gte=(datetime.utcnow() - TWO_MINS),
             )
 
@@ -184,8 +190,11 @@ class Comment(models.Model):
         else:
             is_new = True
 
+            if self.comment_raw is None or self.comment_raw == "":
+                self.comment_raw = self.comment
+
             responses = signals.comment_will_be_posted.send(
-                sender  = self.__class__, comment = self)
+                sender = self.__class__, comment = self)
         
             for (receiver, response) in responses:
                 if response == False:

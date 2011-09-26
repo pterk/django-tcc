@@ -3,7 +3,8 @@ try:
 except NameError:
     from sets import Set as set
 
-from django.core.paginator import Paginator, InvalidPage
+from django.core.paginator import Paginator, Page, InvalidPage
+from django.db.models import F
 from django.http import Http404
 
 from coffin import template
@@ -18,6 +19,39 @@ register = template.Library()
 # Most of the code below is borrowed from the django_pagination module by James Tauber and Pinax Team,
 # http://pinaxproject.com/docs/dev/external/pagination/index.html
 
+
+class ParentCommentPaginator(Paginator):
+    def page(self, number):
+        "Returns a Page object for the given 1-based page number."
+        number = self.validate_number(number)
+        bottom = (number - 1) * self.per_page
+        # This results in a query to the database ...
+        bottomdate = self.parentcomments[bottom].sortdate
+        try:
+            # This too results in a query to the database ...
+            top = self.parentcomments[bottom+self.per_page-1].sortdate
+            object_list = self.object_list.extra(
+                where=["sortdate between '%s' and '%s'" % (top, bottomdate)])
+        except IndexError:
+            object_list = self.object_list.extra(
+                where=["sortdate <= '%s'" % bottomdate])
+        # And another (final) call to the database 
+        return Page(object_list, number, self)
+
+    def _get_count(self):
+        "Returns the total number of objects, across all pages."
+        if self._count is None:
+            try:
+                self.parentcomments = self.object_list.filter(parent__isnull=True)
+                self._count = self.parentcomments.count()
+            except (AttributeError, TypeError):
+                # AttributeError if object_list has no count() method.
+                # TypeError if object_list.count() requires arguments
+                # (i.e. is of type list).
+                self._count = len(self.object_list)
+        return self._count
+    count = property(_get_count)
+        
 
 class AutopaginateExtension(Extension):
     """ 
@@ -86,7 +120,7 @@ class AutopaginateExtension(Extension):
         window = mykwargs.pop('window')
         hashtag = mykwargs.pop('hashtag')
         try:
-            paginator = Paginator(objs, **mykwargs)
+            paginator = ParentCommentPaginator(objs, **mykwargs)
 
             key = 'page'
             if prefix:
@@ -194,6 +228,6 @@ class AutopaginateExtension(Extension):
             return to_return
         except KeyError, AttributeError:
             return {}
-    
+
 
 register.tag(AutopaginateExtension)
