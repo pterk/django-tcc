@@ -24,6 +24,8 @@ class ParentCommentPaginator(Paginator):
     def page(self, number):
         "Returns a Page object for the given 1-based page number."
         number = self.validate_number(number)
+        if self.count == 0:
+            return Page(self.object_list, number, self)
         bottom = (number - 1) * self.per_page
         # This results in a query to the database ...
         bottomdate = self.parentcomments[bottom].sortdate
