@@ -219,7 +219,12 @@ class Comment(models.Model):
             # for a commenting system.
             responses = signals.comment_was_posted.send(
                 sender  = self.__class__, comment = self)
-        
+
+        else:
+
+            # limit needs updating when a message is removed / flagged
+            if REPLY_LIMIT and self.parent:
+                self.parent.set_limit()
 
     def delete(self, *args, **kwargs):
         self.get_replies(include_self=True).delete()
