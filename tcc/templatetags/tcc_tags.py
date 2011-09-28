@@ -6,6 +6,7 @@ from coffin.template.loader import render_to_string
 from tcc import api
 from tcc.forms import CommentForm
 from tcc.utils import get_content_types
+from tcc.views import _get_comment_form
 
 register = template.Library()
 
@@ -13,15 +14,25 @@ register = template.Library()
 @register.simple_tag(takes_context=True)
 def get_comments_for_object(context, object, next=None):
     ct = ContentType.objects.get_for_model(object)
-    if ct.id not in get_content_types():
-        return 'Not supported'
-    comments = api.get_comments(ct.id, object.pk)
-    comments = comments.order_by('-submit_date')
+    request = context['request']
     initial = {'content_type': ct.id,
                'object_pk': object.pk,
                'next': next,
                }
     form = CommentForm(object, initial=initial)
+    thread_id = request.GET.get('cpermalink', None)
+    if thread_id:
+        comments = api.get_comment_thread(thread_id)
+    else:
+        comments = api.get_comments_limited(ct.id, object.pk)
+    if not comments:
+        comments = []
+    else:
+        comments = comments.extra(
+            select={
+                'sortdate': 'CASE WHEN tcc_comment.parent_id is null ' \
+                    ' THEN tcc_comment.submit_date ELSE T3.submit_date END'}
+            ).order_by('-sortdate', 'path')
     context.update({'comments': comments, 'form': form})
     return render_to_string('tcc/list-comments.html',
                             context_instance=context)

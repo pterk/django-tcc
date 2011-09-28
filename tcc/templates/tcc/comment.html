@@ -18,7 +18,7 @@
       | <a href="{% url tcc_unsubscribe c.id %}" title="{% trans %}unsubscribe{% endtrans %}">{% trans %}unsubscribe{% endtrans %}</a>
     </span>
     {% endif %}
-    | <a href="{% url tcc_thread c.get_root_id() %}#{{ c.get_base36() }}" title="permalink">#</a>
+    | <a href="?cpermalink={{ c.get_root_id() }}#{{ c.get_base36() }}" title="permalink">#</a>
   </p>
   {#
   The following construction will close the li if doclose is NOT set (a reasonable default)

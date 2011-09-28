@@ -4,19 +4,19 @@
 <div class="pagination">
 
   {% if pages.page_obj.has_previous() %}
-  <a href="?page={{ pages.page_obj.previous_page_number() }}{{ pages.getvars }}{{ pages.hashtag }}" class="prev">&lsaquo;&lsaquo; {% trans %}previous{% endtrans %}</a>
+  <a href="{{ 'tcc_index'|url(content_type_id, object_pk) }}?page={{ pages.page_obj.previous_page_number() }}{{ pages.getvars }}{{ pages.hashtag }}" class="prev">&lsaquo;&lsaquo; {% trans %}previous{% endtrans %}</a>
   {% endif %}
 
   {% for page in pages.pages %}
   {% if page %}
-  <a href="?{{ pages.prefix }}page={{ page }}{{ pages.getvars }}{{ pages.hashtag }}"{% if page == pages.page_obj.number %} class="selected"{% endif %}>{{ page }}</a>
+  <a href="{{ 'tcc_index'|url(content_type_id, object_pk) }}?{{ pages.prefix }}page={{ page }}{{ pages.getvars }}{{ pages.hashtag }}"{% if page == pages.page_obj.number %} class="selected"{% endif %}>{{ page }}</a>
   {% else %}
   ...
   {% endif %}
   {% endfor %}
 
   {% if pages.page_obj.has_next() %}
-  <a href="?{{ pages.prefix }}page={{ pages.page_obj.next_page_number() }}{{ pages.getvars }}{{ pages.hashtag }}" class="next">{% trans %}next{% endtrans %} &rsaquo;&rsaquo;</a>
+  <a href="{{ 'tcc_index'|url(content_type_id, object_pk) }}?{{ pages.prefix }}page={{ pages.page_obj.next_page_number() }}{{ pages.getvars }}{{ pages.hashtag }}" class="next">{% trans %}next{% endtrans %} &rsaquo;&rsaquo;</a>
   {% endif %}
 
 </div>
@@ -24,9 +24,9 @@
 
 {%- endmacro %}
 
-<ul id="tcc">
-  {% if user.is_authenticated() %}
-  <form action="{% url tcc_post %}" method="post">
+<div id="tcc">
+
+  <form action="{% url tcc_post %}" method="post" style="display:none">
     {% csrf_token %}
     {% for fld in form %}{{ fld.as_widget() }}{% endfor %}
     <div>
@@ -34,21 +34,22 @@
       <a style="display:none" class="reply-form" href="#" title="{% trans %}Cancel{% endtrans %}">{% trans %}Cancel{% endtrans %}</a>
     </div>
   </form>
-  {% else %}
+
   <p>Please <a href="{% url auth_login %}">log in</a> to share your insights</p>
-  {% endif %}
 
   {% set levels = [0] %}
   {% set prev = None %}
 
   {% if not comments %}
-  <div class="blank_slate small" style="margin-top: 10px;">
+  <div class="no_comments" style="margin-top: 10px;">
     {% trans %}No comments yet...{% endtrans %}
   </div>
   {% endif %}
 
-  {% autopaginate comments as cs prefix='c', per_page=21, orphans=3  %}
+  {% autopaginate comments as cs prefix='c', per_page=20 %}
 
+  <ul class="comments">
+    <a name="comments"></a>
   {% for c in cs %}
 
   {% if prev == None and c.parent %}
@@ -74,8 +75,13 @@
   {% else %}
     {% for x in prevs[lvl:-1] %}
     </ul>
-    {% if prev.parent.childcount > c.REPLY_LIMIT %}<a class="showall" href="{% url tcc_replies prev.parent_id %}" title="{% trans %}Show all{% endtrans %}">
-      {% trans %}Show all{% endtrans %}</a>{% endif %}
+    <span class="comment-reply" style="display:none">
+      <a class="small_button" id="post-{{ c.id }}" href="#" title="{% trans %}reply{% endtrans %}">{% trans %}reply{% endtrans %}</a>
+    </span>
+    {% if prev.parent.childcount > c.REPLY_LIMIT %}
+    <a class="showall" href="{% url tcc_replies prev.parent_id %}" title="{% trans %}Show all{% endtrans %}">
+      {% trans %}Show all{% endtrans %}</a>
+    {% endif %}
   </li>
     {% endfor %}
   {% endif %}
@@ -94,6 +100,9 @@
   {% else %}
   {% for _ in levels[1:] %}
     </ul>
+    <span class="comment-reply" style="display:none">
+      <a class="small_button" id="post-{{ c.id }}" href="#" title="{% trans %}reply{% endtrans %}">{% trans %}reply{% endtrans %}</a>
+    </span>
     {% if childcount < c.parent.childcount or c.parent.childcount > c.REPLY_LIMIT %}
     <a class="showall" href="{% url tcc_replies c.parent_id %}" title="{% trans %}Show all{% endtrans %}">
       {% trans %}Show all{% endtrans %}</a>
@@ -106,6 +115,8 @@
   {% set prev = c %}
 
   {% endfor %}
+
+</ul>
   
   {{ paginator(cs_pages) }}
 
@@ -124,12 +135,17 @@
     <a class="unsubscribe-cancel" href="#">{% trans %}Cancel{% endtrans %}</a>
   </form>
 
-</ul>
+</div>
 
 <script type="text/javascript">
   $(document).ready(function(){
   {% if user.is_authenticated() %}
-  $(document).tcc({user_id: {{ user.id }}, user_name: '{{ user.username }}'});
+  $(document).tcc({
+    user_id: {{ user.id }},
+    user_name: '{{ user.username }}',
+    csrf_token: '{{ csrf_token }}',
+    staff: {% if request.user.is_staff %}true{% else %}false{% endif %}
+  });
   {% else %}
   $(document).tcc();
   {% endif %}

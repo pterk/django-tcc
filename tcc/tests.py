@@ -199,16 +199,16 @@ class API(TestCase):
         pk = self.user1.pk
         for _ in range(3):
             p = api.post_comment(content_type_id=ct.id, object_pk=pk,
-                                 user_id=pk, comment="Root message")
-            c = api.post_reply(user_id=pk, comment="Reply", parent_id=p.id)
+                                 user_id=pk, comment="Root message %s" % _)
+            c = api.post_reply(user_id=pk, comment="Reply %s" % _, parent_id=p.id)
             self.assertTrue(c is not None)
             if settings.MAX_DEPTH > 2:
-                r1 = api.post_reply(user_id=pk, comment="Reply", parent_id=c.id)
+                r1 = api.post_reply(user_id=pk, comment="Reply %s 1" % _, parent_id=c.id)
                 self.assertTrue(c is not None)
-                r2 = api.post_reply(user_id=pk, comment="Reply", parent_id=c.id)
+                r2 = api.post_reply(user_id=pk, comment="Reply %s 2" % _, parent_id=c.id)
                 self.assertTrue(c is not None)
             if settings.MAX_DEPTH > 3:
-                r1a = api.post_reply(user_id=pk, comment="Reply", parent_id=r1.id)
+                r1a = api.post_reply(user_id=pk, comment="Reply %s 3" % _, parent_id=r1.id)
                 self.assertTrue(c is not None)
         tree = api.get_comments_as_tree(ct.id, pk)
         self.assertEqual(len(tree), 3)
@@ -245,7 +245,7 @@ class ORM(TestCase):
         pk = self.user1.pk
         for _ in range(5):
             p = api.post_comment(content_type_id=ct.id, object_pk=pk,
-                                 user_id=pk, comment="Root message")
+                                 user_id=pk, comment="Root message %s" % _)
             for __ in range(settings.REPLY_LIMIT+3):
-                c = api.post_reply(user_id=pk, comment="Reply", parent_id=p.id)
+                c = api.post_reply(user_id=pk, comment="Reply %s%s" % (_, __), parent_id=p.id)
         self.assertEqual(api.get_comments_limited(ct.id, pk).count(), 5*(settings.REPLY_LIMIT+1))

@@ -21,6 +21,8 @@
     $.fn.tcc.defaults = {
         user_id: null,
         user_name: null,
+        staff: false,
+        csrf_token: ''
     };
 
     // private function for debugging
@@ -148,9 +150,16 @@
         });
 
         if(opts.user_id){
+
+            $('#tcc form').first().css({'display': 'inline'});
+            $('#tcc p').first().css({'display': 'none'});
+
             $('.comment-remove-'+opts.user_id).css({'display': 'inline'});
+            if (opts.staff) {
+                $('.comment-remove').css({'display': 'inline'});
+            }
             $('.comment-remove').click(function(){
-                var parent = $(this).parent().parent();
+                var parent = $(this).closest('li.comment');
                 $('form', parent).remove();
                 var action = $('a', this).attr('href');
                 var frm = $('.remove-form').last().clone();
@@ -161,6 +170,7 @@
                 frm.submit(function(){
                     $('body').css({'cursor': 'wait'});
                     $('.notify', frm).text('removing...');
+                    $('input[name="csrfmiddlewaretoken"]').val(opts.csrf_token);
                     $.post(action, $(this).serialize(), function(){
                         $('body').css({'cursor': 'auto'});
                         $('.notify', frm).text('');
@@ -181,7 +191,7 @@
 
             $('.comment-unsubscribe-'+opts.user_id).css({'display': 'inline'});
             $('.comment-unsubscribe').click(function(){
-                var parent = $(this).parent().parent();
+                var parent = $(this).closest('li.comment');
                 $('form', parent).remove();
                 var action = $('a', this).attr('href');
                 var frm = $('.unsubscribe-form').last().clone();
@@ -192,6 +202,7 @@
                 frm.submit(function(){
                     $('body').css({'cursor': 'wait'});
                     $('.notify', frm).text('unsubscribing...');
+                    $('input[name="csrfmiddlewaretoken"]').val(opts.csrf_token);
                     $.post(action, $(this).serialize(), function(){
                         $('body').css({'cursor': 'auto'});
                         $('.notify', frm).text('');
@@ -212,7 +223,7 @@
 
             $('.comment-reply').css({'display': 'inline'});
             $('.comment-reply').click(function(){
-                var parent = $(this).parent().parent();
+                var parent = $(this).closest('li.comment');
                 $('form', parent).remove();
                 var frm = $('#tcc form').first().clone(false);
                 $('ul.errors', frm).empty();
@@ -220,6 +231,7 @@
                 $(frm).submit(function(){
                     $('body').css({'cursor': 'wait'});
                     $('.notify', frm).text('Posting your comment...');
+                    $('input[name="csrfmiddlewaretoken"]').val(opts.csrf_token);
                     $.post($(this).attr('action'), $(this).serialize(), function(comment){
                         if($('ul.replies', parent).length == 0){ $(parent).append('<ul class="replies"/>');}
                         $('ul.replies', parent).append(comment);
@@ -242,6 +254,12 @@
                 $('#id_comment', frm).focus();
                 return false;
             });
+        } else {
+
+            // No user_id / not logged in
+            $('#tcc form').first().css({'display': 'none'});
+            $('#tcc p').first().css({'display': 'inline'});
+
         };
     };
 
@@ -270,22 +288,23 @@
             $(frm).submit(function(){
                 $('body').css({'cursor': 'wait'});
                 $('.notify', frm).text('Posting your comment...');
+                $('input[name="csrfmiddlewaretoken"]').val(opts.csrf_token);
                 // clean up any pre-existing errors (from previous submit)
                 $('ul.errors', frm).remove();
                 $.post($(this).attr('action'), $(this).serialize(), function(data){
                     $('body').css({'cursor': 'auto'});
                     $('.notify', frm).text('');
-                    if( $('ul#tcc li').length == 0){
+                    if( $('#tcc ul.comments li').length == 0){
                         // There were no comments so far, so this is the first comment
                         // Remove the 'no comments yet' message
-                        $('ul#tcc').children().not('form').remove();
-                        $('ul#tcc').append(data);
+                        $('#tcc ul.comments').children().not('form').remove();
+                        $('#tcc ul.comments').append(data);
                     } else {
-                        $('ul#tcc li').first().before(data);
+                        $('#tcc ul.comments li').first().before(data);
                     }
                     apply_hooks();
                     $('#id_comment', frm).val('');
-                    var latest = $('ul#tcc li.comment').first();
+                    var latest = $('#tcc ul.comments li.comment').first();
                     if(!isScrolledIntoView(latest)){
                         $(document).scrollTop($(latest).offset().top-300);
                     };
