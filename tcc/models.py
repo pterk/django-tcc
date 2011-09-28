@@ -239,7 +239,7 @@ class Comment(models.Model):
         if n == 0:
             self.limit is None
         elif n < REPLY_LIMIT:
-            self.limit = replies[0].submit_date
+            self.limit = replies[n-1].submit_date
         else:
             self.limit = replies[REPLY_LIMIT-1].submit_date
         self.save()
