@@ -16,7 +16,7 @@ def make_tree(comments):
     """
     root = []
     levels = []
-    for c in comments:
+    for c in comments.order_by('path'):
         c.replies = []
         level = c.depth
         if c.parent:
@@ -38,16 +38,20 @@ def print_tree(tree): # pragma: no cover
 
 def get_comments(content_type_id, object_pk, site_id=SITE_ID):
     return Comment.objects.select_related(
-        'user', 'userprofile').filter(content_type__id=content_type_id,
-                                      object_pk=object_pk,
-                                      site__id=site_id)
+        'user', 'userprofile').filter(
+        content_type__id=content_type_id,
+        object_pk=object_pk,
+        site__id=site_id)
 
 
 def get_comments_limited(content_type_id, object_pk, site_id=SITE_ID):
-    return Comment.limited.filter(content_type__id=content_type_id,
-                                  object_pk=object_pk,
-                                  site__id=site_id
-                                  ).select_related('user', 'userprofile')
+    return Comment.limited.select_related(
+        'user', 'userprofile'
+        ).filter(
+        content_type__id=content_type_id,
+        object_pk=object_pk,
+        site__id=site_id
+        )
 
 
 def get_comments_as_tree(content_type_id, object_pk, site_id=SITE_ID):
@@ -101,7 +105,7 @@ def post_reply(parent_id, user_id, comment):
 
 def get_comment(comment_id):
     try:
-        return Comment.objects.select_related('user').get(id=comment_id)
+        return Comment.objects.select_related('user', 'user_profile').get(id=comment_id)
     except ObjectDoesNotExist:
         return None
 
