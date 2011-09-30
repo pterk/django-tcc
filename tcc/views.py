@@ -66,6 +66,12 @@ def thread(request, thread_id):
     comments = api.get_comment_thread(thread_id)
     if not comments:
         raise Http404()
+    else:
+        comments = comments.extra(
+            select={
+                'sortdate': 'CASE WHEN tcc_comment.parent_id is null ' \
+                    ' THEN tcc_comment.submit_date ELSE T3.submit_date END'}
+            ).order_by('-sortdate', 'path')
     rootcomment = comments[0]
     form = _get_comment_form(rootcomment.content_type_id, rootcomment.object_pk)
     context = RequestContext(request, {'comments': comments, 'form': form})
