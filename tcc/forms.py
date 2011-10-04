@@ -28,7 +28,7 @@ class CommentForm(forms.ModelForm):
         exclude = ['submit_date', 'is_open', 'is_removed', 'is_approved',
                    'is_public', 'site', 'limit', 'path', 'user_name',
                    'user_email', 'user_url', 'comment_raw', 'childcount',
-                   'depth', 'subscribers', 'ip_address']
+                   'depth', 'subscribers', 'ip_address', 'sortdate']
         widgets = {
             'content_type': forms.HiddenInput,
             'object_pk': forms.HiddenInput,

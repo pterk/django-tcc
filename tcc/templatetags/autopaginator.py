@@ -32,11 +32,13 @@ class ParentCommentPaginator(Paginator):
         try:
             # This too results in a query to the database ...
             top = self.parentcomments[bottom+self.per_page-1].sortdate
-            object_list = self.object_list.extra(
-                where=["sortdate between '%s' and '%s'" % (top, bottomdate)])
+            object_list = self.object_list.filter(sortdate__range=(top, bottomdate))
+            #extra(
+            #    where=["sortdate between '%s' and '%s'" % (top, bottomdate)])
         except IndexError:
-            object_list = self.object_list.extra(
-                where=["sortdate <= '%s'" % bottomdate])
+            object_list = self.object_list.filter(sortdate__lte=bottomdate)
+            #.extra(
+            #    where=["sortdate <= '%s'" % bottomdate])
         # And another (final) call to the database 
         return Page(object_list, number, self)
 

@@ -80,12 +80,13 @@ class Comment(models.Model):
     is_public = models.BooleanField(_('Public'), default=True)
     path = models.CharField(_('Path'), unique=True, max_length=MAX_DEPTH*STEPLEN)
     limit = models.DateTimeField(
-        _('Show replies from'), null=True, blank=True)
+        _('Show replies from'), null=True, blank=True, db_index=True)
     # subscription (for notification)
     subscribers = models.ManyToManyField(User, related_name="thread_subscribers")
     # denormalized cache
     childcount = models.IntegerField(_('Reply count'), default=0)
     depth = models.IntegerField(_('Depth'), default=0)
+    sortdate = models.DateTimeField(_('Sortdate'), db_index=True, default=datetime.now)
 
     unfiltered = models.Manager()
     objects = CurrentCommentManager()
@@ -206,10 +207,18 @@ class Comment(models.Model):
 
         if is_new:
 
+            if self.parent:
+                self.sortdate = self.parent.submit_date
+            else:
+                self.sortdate = self.submit_date
+
+            # both _set_path and _set_limit save the model so skipping
+            # it here.
+
             self._set_path()
 
             if REPLY_LIMIT and self.parent:
-                self.parent.set_limit()
+                self.parent._set_limit()
 
             # Sending this signal so *it* can be handled rather than
             # post_save which is triggered 'too soon': before
@@ -224,15 +233,15 @@ class Comment(models.Model):
 
             # limit needs updating when a message is removed / flagged
             if REPLY_LIMIT and self.parent:
-                self.parent.set_limit()
+                self.parent._set_limit()
 
     def delete(self, *args, **kwargs):
         self.get_replies(include_self=True).delete()
         super(Comment, self).delete(*args, **kwargs)
         if self.parent:
-            self.parent.set_limit()
+            self.parent._set_limit()
 
-    def set_limit(self):
+    def _set_limit(self):
         replies = self.get_replies(levels=1).order_by('-submit_date')
         n = replies.count()
         self.childcount = n

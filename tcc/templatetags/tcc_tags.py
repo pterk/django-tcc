@@ -28,11 +28,7 @@ def get_comments_for_object(context, object, next=None):
     if not comments:
         comments = []
     else:
-        comments = comments.extra(
-            select={
-                'sortdate': 'CASE WHEN tcc_comment.parent_id is null ' \
-                    ' THEN tcc_comment.submit_date ELSE T3.submit_date END'}
-            ).order_by('-sortdate', 'path')
+        comments = comments.order_by('-sortdate', 'path')
     context.update({'comments': comments, 'form': form})
     return render_to_string('tcc/list-comments.html',
                             context_instance=context)
