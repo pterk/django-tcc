@@ -207,8 +207,11 @@ class Comment(models.Model):
 
         if is_new:
 
+            # make sure self.limit is absolutely equal to submit_date
+            self.limit = self.submit_date
             if self.parent:
                 self.sortdate = self.parent.submit_date
+
             else:
                 self.sortdate = self.submit_date
 

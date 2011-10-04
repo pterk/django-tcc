@@ -28,17 +28,15 @@ class ParentCommentPaginator(Paginator):
             return Page(self.object_list, number, self)
         bottom = (number - 1) * self.per_page
         # This results in a query to the database ...
-        bottomdate = self.parentcomments[bottom].sortdate
+        bottomdate = getattr(self.parentcomments[bottom], settings.SORTORDER)
         try:
             # This too results in a query to the database ...
             top = self.parentcomments[bottom+self.per_page-1].sortdate
-            object_list = self.object_list.filter(sortdate__range=(top, bottomdate))
-            #extra(
-            #    where=["sortdate between '%s' and '%s'" % (top, bottomdate)])
+            kwargs = {'%s__range' % settings.SORTORDER: (top, bottomdate)}
+            object_list = self.object_list.filter(**kwargs)
         except IndexError:
-            object_list = self.object_list.filter(sortdate__lte=bottomdate)
-            #.extra(
-            #    where=["sortdate <= '%s'" % bottomdate])
+            kwargs = {'%s__lte' % setting.SORTORDER: bottomdate}
+            object_list = self.object_list.filter(**kwargs)
         # And another (final) call to the database 
         return Page(object_list, number, self)
 
