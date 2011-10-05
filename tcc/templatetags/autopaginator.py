@@ -35,7 +35,7 @@ class ParentCommentPaginator(Paginator):
             kwargs = {'%s__range' % settings.SORTORDER: (top, bottomdate)}
             object_list = self.object_list.filter(**kwargs)
         except IndexError:
-            kwargs = {'%s__lte' % setting.SORTORDER: bottomdate}
+            kwargs = {'%s__lte' % settings.SORTORDER: bottomdate}
             object_list = self.object_list.filter(**kwargs)
         # And another (final) call to the database 
         return Page(object_list, number, self)
