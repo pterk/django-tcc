@@ -5,7 +5,6 @@ from coffin.template.loader import render_to_string
 
 from tcc import api
 from tcc.forms import CommentForm
-from tcc.settings import SORTORDER
 from tcc.utils import get_content_types
 from tcc.views import _get_comment_form
 
@@ -29,7 +28,7 @@ def get_comments_for_object(context, object, next=None):
     if not comments:
         comments = []
     else:
-        comments = comments.order_by('-%s' % SORTORDER, 'path')
+        comments = comments.order_by('-sortdate', 'path')
     context.update({'comments': comments, 'form': form})
     return render_to_string('tcc/list-comments.html',
                             context_instance=context)

@@ -18,8 +18,8 @@ from tcc.managers import (
     )
 from tcc import signals
 from tcc.settings import (
-    STEPLEN, COMMENT_MAX_LENGTH, MODERATED, REPLY_LIMIT,
-    MAX_DEPTH, MAX_REPLIES, ADMIN_CALLBACK, SUBSCRIBE_ON_POST
+    STEPLEN, COMMENT_MAX_LENGTH, MODERATED, REPLY_LIMIT, MAX_DEPTH,
+    MAX_REPLIES, ADMIN_CALLBACK, SUBSCRIBE_ON_POST, SORT_BY_LATEST_COMMENT
     )
 from django.utils.safestring import mark_safe
 
@@ -67,7 +67,7 @@ class Comment(models.Model):
     user_name   = models.CharField(_("user's name"), max_length=50, blank=True)
     user_email  = models.EmailField(_("user's email address"), blank=True)
     user_url    = models.URLField(_("user's URL"), blank=True)
-    submit_date = models.DateTimeField(_('Date'), default=datetime.utcnow)
+    submit_date = models.DateTimeField(_('Date'), db_index=True, default=datetime.utcnow)
     # Protip: Use postgres...
     comment = models.TextField(_('Comment'), max_length=COMMENT_MAX_LENGTH)
     comment_raw = models.TextField(_('Raw Comment'), max_length=COMMENT_MAX_LENGTH)
@@ -86,7 +86,7 @@ class Comment(models.Model):
     # denormalized cache
     childcount = models.IntegerField(_('Reply count'), default=0)
     depth = models.IntegerField(_('Depth'), default=0)
-    sortdate = models.DateTimeField(_('Sortdate'), db_index=True, default=datetime.now)
+    sortdate = models.DateTimeField(_('Sortdate'), db_index=True, default=datetime.utcnow)
 
     unfiltered = models.Manager()
     objects = CurrentCommentManager()
@@ -199,7 +199,8 @@ class Comment(models.Model):
         
             for (receiver, response) in responses:
                 if response == False:
-                    raise ValidationError('Comment blocked by `comment_will_be_posted` listener.')
+                    raise ValidationError(
+                        'Comment blocked by `comment_will_be_posted` listener.')
 
         self.clean()
 
@@ -207,21 +208,22 @@ class Comment(models.Model):
 
         if is_new:
 
-            # make sure self.limit is absolutely equal to submit_date
-            self.limit = self.submit_date
-            if self.parent:
-                self.sortdate = self.parent.submit_date
-
-            else:
-                self.sortdate = self.submit_date
-
-            # both _set_path and _set_limit save the model so skipping
-            # it here.
-
             self._set_path()
 
             if REPLY_LIMIT and self.parent:
                 self.parent._set_limit()
+
+            if SORT_BY_LATEST_COMMENT:
+                dte = self.submit_date
+                Comment.unfiltered.filter(
+                    path__startswith=self.get_root_path()
+                    ).update(sortdate=dte)
+            else:
+                # Sort by '(sub)thread-started-date (parent.submit_date)'
+                if self.parent:
+                    self.sortdate = self.parent.submit_date
+                else:
+                    self.sortdate = self.submit_date
 
             # Sending this signal so *it* can be handled rather than
             # post_save which is triggered 'too soon': before
@@ -249,7 +251,7 @@ class Comment(models.Model):
         n = replies.count()
         self.childcount = n
         if n == 0:
-            self.limit is None
+            self.limit = None
         elif n < REPLY_LIMIT:
             self.limit = replies[n-1].submit_date
         else:
