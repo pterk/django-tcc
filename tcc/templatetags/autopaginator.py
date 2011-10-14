@@ -51,20 +51,22 @@ class ParentCommentPaginator(Paginator):
                 self._count = len(self.object_list)
         return self._count
     count = property(_get_count)
-        
+
 
 class AutopaginateExtension(Extension):
-    """ 
-        Applies pagination to the given dataset (and saves truncated dataset to the context variable), 
-        sets context variable with data enough to build html for paginator
-        
-        General syntax:
+    """
+    Applies pagination to the given dataset (and saves truncated
+    dataset to the context variable), sets context variable with
+    data enough to build html for paginator
 
-        {% autopaginate dataset [as ctx_variable] %}
-        if "as" part is omitted, trying to save truncated dataset back to the original
-        context variable.
-        Pagination data is saved to the NAME_pages context variable, where NAME is
-        original name of the dataset or ctx_variable
+    General syntax:
+
+    {% autopaginate dataset [as ctx_variable] %}
+
+    if "as" part is omitted, trying to save truncated dataset back
+    to the original context variable.  Pagination data is saved to
+    the NAME_pages context variable, where NAME is original name
+    of the dataset or ctx_variable
     """
     tags = set(['autopaginate'])
     default_kwargs = {
@@ -83,8 +85,9 @@ class AutopaginateExtension(Extension):
         elif hasattr(object_list, 'name'):
             name = object_list.name
         else:
-            raise TemplateSyntaxError("Cannot determine the name of objects you want to paginate, use 'as foobar' syntax", lineno)
-
+            raise TemplateSyntaxError(
+                "Cannot determine the name of objects " \
+                    "you want to paginate, use 'as foobar' syntax", lineno)
 
         kwargs = [] # wait... what?
         loops = 0
@@ -95,24 +98,29 @@ class AutopaginateExtension(Extension):
             key = parser.parse_assign_target().name
             if key not in self.default_kwargs.keys():
                 raise TemplateSyntaxError(
-                    "Unknown keyword argument for autopaginate. Your options are: %s" % (
-                        ", ".join(self.default_kwargs.keys())
-                        ))
+                    "Unknown keyword argument for autopaginate. "\
+                        "Your options are: %s" % (
+                            ", ".join(self.default_kwargs.keys())
+                            ))
             parser.stream.expect('assign')
             value = parser.parse_expression()
-            kwargs.append(nodes.Keyword(key, value)) #.set_lineno(lineno)) # like so?
+            kwargs.append(nodes.Keyword(key, value))
             loops += 1
 
         return [
-            nodes.Assign(nodes.Name(name + '_pages', 'store'), 
-                         self.call_method('_render_pages', [object_list, nodes.Name('request', 'load')], kwargs)
-            ).set_lineno(lineno),
+            nodes.Assign(nodes.Name(name + '_pages', 'store'),
+                         self.call_method('_render_pages',
+                                          [object_list, nodes.Name('request', 'load')],
+                                          kwargs)
+                         ).set_lineno(lineno),
 
-            nodes.Assign(nodes.Name(name, 'store'), 
-                nodes.Getattr(nodes.Name(name + '_pages', 'load'), 'object_list', nodes.Impossible())
-            ).set_lineno(lineno),
-        ]
-        
+            nodes.Assign(nodes.Name(name, 'store'),
+                         nodes.Getattr(nodes.Name(name + '_pages', 'load'),
+                                       'object_list',
+                                       nodes.Impossible())
+                         ).set_lineno(lineno),
+            ]
+
     def _render_pages(self, objs, request, **kwargs):
         mykwargs = self.default_kwargs.copy()
         mykwargs.update(kwargs)
@@ -133,7 +141,7 @@ class AutopaginateExtension(Extension):
                 page_obj = paginator.page(pageno)
             except InvalidPage:
                 raise Http404('Invalid page requested.  If DEBUG were set to ' +
-                        'False, an HTTP 404 page would have been shown instead.')
+                              'False, an HTTP 404 page would have been shown instead.')
 
             page_range = paginator.page_range
             # Calculate the record range in the current page for display.
@@ -189,7 +197,7 @@ class AutopaginateExtension(Extension):
                 second_list.sort()
                 diff = second_list[0] - pages[-1]
                 # If there is a gap of two, between the last page of the current
-                # set and the first page of the last set, then we're missing a 
+                # set and the first page of the last set, then we're missing a
                 # page.
                 if diff == 2:
                     pages.append(second_list[0] - 1)
@@ -214,8 +222,9 @@ class AutopaginateExtension(Extension):
                 'object_list': page_obj.object_list,
                 'paginator': paginator,
                 'hashtag': hashtag,
-                'is_paginated': paginator.count > (paginator.per_page + paginator.orphans),
-            }
+                'is_paginated': paginator.count > (paginator.per_page + \
+                                                       paginator.orphans),
+                }
 
             getvars = request.GET.copy()
             if key  in getvars:
