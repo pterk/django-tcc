@@ -109,6 +109,51 @@
             return false;
         });
 
+        if ( opts.user_id ) {
+            // run this only once
+            var frm = $('#tcc form').first();
+            frm.css({"display": 'block'});
+            $(frm).submit(function(){
+                $('body').css({'cursor': 'wait'});
+                $('.notify', frm).text('Posting your comment...');
+                $('input[name="csrfmiddlewaretoken"]', this).val(opts.csrf_token);
+                // clean up any pre-existing errors (from previous submit)
+                $('ul.errors', frm).remove();
+                $.ajax({
+                    type: 'POST',
+                    timeout: opts.timeout,
+                    url: $(this).attr('action'),
+                    data: $(this).serialize(),
+                    context: frm,
+                    error: function(jqXHR, textStatus, errorThrown){
+                        handleError(frm, jqXHR, textStatus, errorThrown);
+                    },
+                    success: function(data){
+                        $('body').css({'cursor': 'auto'});
+                        $('.notify', frm).text('');
+                        if( $('#tcc ul.comments li').length == 0){
+                            // There were no comments so far, so this is the first comment
+                            // Remove the 'no comments yet' message
+                            $('#tcc ul.comments').children().not('form').remove();
+                            $('#tcc ul.comments').append(data);
+                        } else {
+                            $('#tcc ul.comments li').first().before(data);
+                        }
+                        apply_hooks();
+                        $('#id_comment', frm).val('');
+                        var latest = $('#tcc ul.comments li.comment').first();
+                        if(!isScrolledIntoView(latest)){
+                            $(document).scrollTop($(latest).offset().top-300);
+                        };
+
+                    }
+                });
+                return false;
+            });
+        } else {
+            // Not logged in
+            $('#no-comment-form').css({'display': 'inline'});
+        };
 
     }
 
@@ -224,7 +269,7 @@
                     $.ajax({
                         type: 'POST',
                         timeout: opts.timeout,
-                        url: action, 
+                        url: action,
                         data: $(this).serialize(),
                         error: function(jqXHR, textStatus, errorThrown){
                             handleError(frm, jqXHR, textStatus, errorThrown);
@@ -331,51 +376,6 @@
 
         apply_hooks();
 
-        if ( opts.user_id ) {
-            // run this only once
-            var frm = $('#tcc form').first();
-            frm.css({"display": 'block'});
-            $(frm).submit(function(){
-                $('body').css({'cursor': 'wait'});
-                $('.notify', frm).text('Posting your comment...');
-                $('input[name="csrfmiddlewaretoken"]', this).val(opts.csrf_token);
-                // clean up any pre-existing errors (from previous submit)
-                $('ul.errors', frm).remove();
-                $.ajax({
-                    type: 'POST',
-                    timeout: opts.timeout,
-                    url: $(this).attr('action'), 
-                    data: $(this).serialize(),
-                    context: frm,
-                    error: function(jqXHR, textStatus, errorThrown){
-                        handleError(frm, jqXHR, textStatus, errorThrown);
-                    },
-                    success: function(data){
-                        $('body').css({'cursor': 'auto'});
-                        $('.notify', frm).text('');
-                        if( $('#tcc ul.comments li').length == 0){
-                            // There were no comments so far, so this is the first comment
-                            // Remove the 'no comments yet' message
-                            $('#tcc ul.comments').children().not('form').remove();
-                            $('#tcc ul.comments').append(data);
-                        } else {
-                            $('#tcc ul.comments li').first().before(data);
-                        }
-                        apply_hooks();
-                        $('#id_comment', frm).val('');
-                        var latest = $('#tcc ul.comments li.comment').first();
-                        if(!isScrolledIntoView(latest)){
-                            $(document).scrollTop($(latest).offset().top-300);
-                        };
-
-                    }
-                });
-                return false;
-            });
-        } else {
-            // Not logged in
-            $('#no-comment-form').css({'display': 'inline'});
-        };
     };
 
 })(jQuery);
