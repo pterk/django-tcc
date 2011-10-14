@@ -96,7 +96,16 @@ class Comment(models.Model):
 
     class Meta:
         ordering = ['path']
-        
+
+    def __unicode__(self):
+        return u'<%s[%d]: at %s by %s: %r>' % (
+            self.__class__.__name__,
+            self.id,
+            self.submit_date,
+            self.user or self.user_name,
+            self.comment_raw[:50],
+            )
+
     def get_parsed_comment(self, reparse=settings.DEBUG):
         if reparse:
             signals.comment_will_be_posted.send(
@@ -104,10 +113,6 @@ class Comment(models.Model):
         parsed_comment = self.comment
         safe_comment = mark_safe(parsed_comment)
         return safe_comment
-
-    def __unicode__(self):
-        return u"%05d %s % 8s: %s" % (
-            self.id, self.submit_date.isoformat(), self.user.username, self.comment[:20])
 
     def get_absolute_url(self):
         link = reverse('tcc_index',
