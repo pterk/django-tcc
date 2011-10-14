@@ -27,22 +27,22 @@ class ParentCommentPaginator(Paginator):
         if self.count == 0:
             return Page(self.object_list, number, self)
         bottom = (number - 1) * self.per_page
-        # This results in a query to the database ...
         bottomdate = self.parentcomments[bottom].sortdate
-        try:
-            # This too results in a query to the database ...
-            top = self.parentcomments[bottom+self.per_page-1].sortdate
-            object_list = self.object_list.filter(sortdate__range=(top, bottomdate))
-        except IndexError:
+        top = bottom + self.per_page
+        if top + self.orphans >= self.count:
             object_list = self.object_list.filter(sortdate__lte=bottomdate)
-        # And another (final) call to the database 
+        else:
+            topdate = self.parentcomments[bottom+self.per_page-1].sortdate
+            object_list = self.object_list.filter(
+                sortdate__range=(topdate, bottomdate))
         return Page(object_list, number, self)
 
     def _get_count(self):
         "Returns the total number of objects, across all pages."
         if self._count is None:
             try:
-                self.parentcomments = self.object_list.filter(parent__isnull=True)
+                self.parentcomments = self.object_list.filter(
+                    parent__isnull=True)
                 self._count = self.parentcomments.count()
             except (AttributeError, TypeError):
                 # AttributeError if object_list has no count() method.

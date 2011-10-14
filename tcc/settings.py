@@ -6,9 +6,9 @@ REPLY_LIMIT = getattr(settings, 'TCC_REPLY_LIMIT', 3)
 MAX_REPLIES = getattr(settings, 'TCC_MAX_REPLIES', 50)
 STEPLEN = getattr(settings, 'TCC_STEPLEN', 6)
 # paginator stuff
-PER_PAGE = getattr(settings, 'PER_PAGE', 25)
+PER_PAGE = getattr(settings, 'PER_PAGE', 10)
 PAGE_WINDOW = getattr(settings, 'PAGE_WINDOW', 3)
-PAGE_ORPHANS = getattr(settings, 'PAGE_ORPHANS', REPLY_LIMIT+1)
+PAGE_ORPHANS = getattr(settings, 'PAGE_ORPHANS', 3)
 # special perms
 ADMIN_CALLBACK = getattr(settings, 'TCC_ADMIN_CALLBACK', None)
 # comment related
