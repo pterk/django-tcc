@@ -22,7 +22,8 @@
         user_id: null,
         user_name: null,
         staff: false,
-        csrf_token: ''
+        csrf_token: '',
+        timeout: 5000,
     };
 
     // private function for debugging
@@ -31,6 +32,16 @@
             window.console.log(msg);
         };
     };
+
+    function handleError(context, jqXHR, textStatus, errorThrown){
+        $('body').css({'cursor': 'auto'});
+        $('.notify', context).text('');
+        try {
+            listErrors(context, $.parseJSON(jqXHR.responseText));
+        } catch (e) {
+            listErrors(context, {'err': [textStatus]});
+        }
+    }
 
     function listErrors(frm, errors){
         if($('ul.errors', frm).length == 0){
@@ -52,6 +63,54 @@
         var elemBottom = elemTop + $(elem).height();
         return ((elemBottom >= docViewTop) && (elemTop <= docViewBottom));
     };
+
+    function hijax(){
+
+        // showall is enabled for everyone
+        $('a.showall').click(function(){
+            var parent = $(this).parent();
+            if($('ul.replies', parent).length == 0){ $(parent).append('<ul class="replies"/>');};
+            var ul = $('ul.replies', parent).first();
+            $.ajax({
+                url: $(this).attr('href'),
+                timeout: opts.timeout,
+                error: function(){
+                    $('ul.replies', parent).after(
+                        '<span class="error">'
+                            + gettext('There was an error communicating with the server')
+                            + '</span>');
+                },
+                success: function(data){
+                    $(ul).html(data);
+                    apply_hooks();
+                }
+            });
+            $(this).remove();
+            return false;
+        });
+
+        // pagination
+        $('#tcc .pagination a').click(function(){
+            $.ajax({
+                url: $(this).attr('href'),
+                timeout: opts.timeout,
+                error: function(){
+                    $('#tcc').append(
+                        '<span class="error">'
+                            + gettext('There was an error communicating with the server')
+                            + '</span>');
+                },
+                success: function(data){
+                    $('#tcc').replaceWith(data);
+                    hijax();
+                    apply_hooks();
+                }
+            });
+            return false;
+        });
+
+
+    }
 
     function apply_hooks(){
 
@@ -140,15 +199,6 @@
             };
         });
 
-        // pagination
-        $('#tcc .pagination a').click(function(){
-            $.get($(this).attr('href'), function(data){
-                $('#tcc').replaceWith(data);
-                apply_hooks();
-            });
-            return false;
-        });
-
         if(opts.user_id){
 
             $('#tcc form').first().css({'display': 'inline'});
@@ -170,17 +220,21 @@
                 frm.submit(function(){
                     $('body').css({'cursor': 'wait'});
                     $('.notify', frm).text('removing...');
-                    $('input[name="csrfmiddlewaretoken"]').val(opts.csrf_token);
-                    $.post(action, $(this).serialize(), function(){
-                        $('body').css({'cursor': 'auto'});
-                        $('.notify', frm).text('');
-                        frm.remove();
-                        parent.remove();
-                    });
-                    $(frm).ajaxError(function(ev, xhr, req, error_message){
-                        $('body').css({'cursor': 'auto'});
-                        $('.notify', frm).text('');
-                        listErrors(frm, $.parseJSON(xhr.responseText));
+                    $('input[name="csrfmiddlewaretoken"]', this).val(opts.csrf_token);
+                    $.ajax({
+                        type: 'POST',
+                        timeout: opts.timeout,
+                        url: action, 
+                        data: $(this).serialize(),
+                        error: function(jqXHR, textStatus, errorThrown){
+                            handleError(frm, jqXHR, textStatus, errorThrown);
+                        },
+                        success: function(){
+                            $('body').css({'cursor': 'auto'});
+                            $('.notify', frm).text('');
+                            frm.remove();
+                            parent.remove();
+                        }
                     });
                     return false;
                 });
@@ -202,17 +256,21 @@
                 frm.submit(function(){
                     $('body').css({'cursor': 'wait'});
                     $('.notify', frm).text('unsubscribing...');
-                    $('input[name="csrfmiddlewaretoken"]').val(opts.csrf_token);
-                    $.post(action, $(this).serialize(), function(){
-                        $('body').css({'cursor': 'auto'});
-                        $('.notify', frm).text('');
-                        frm.remove();
-                        $('.comment-unsubscribe', parent).remove();
-                    });
-                    $(frm).ajaxError(function(ev, xhr, req, error_message){
-                        listErrors(frm, $.parseJSON(xhr.responseText));
-                        $('body').css({'cursor': 'auto'});
-                        $('.notify', frm).text('');
+                    $('input[name="csrfmiddlewaretoken"]', this).val(opts.csrf_token);
+                    $.ajax({
+                        type: 'POST',
+                        timeout: opts.timeout,
+                        url: action,
+                        data: $(this).serialize(),
+                        error: function(jqXHR, textStatus, errorThrown){
+                            handleError(frm, jqXHR, textStatus, errorThrown);
+                        },
+                        success: function(){
+                            $('body').css({'cursor': 'auto'});
+                            $('.notify', frm).text('');
+                            frm.remove();
+                            $('.comment-unsubscribe', parent).remove();
+                        }
                     });
                     return false;
                 });
@@ -231,19 +289,23 @@
                 $(frm).submit(function(){
                     $('body').css({'cursor': 'wait'});
                     $('.notify', frm).text('Posting your comment...');
-                    $('input[name="csrfmiddlewaretoken"]').val(opts.csrf_token);
-                    $.post($(this).attr('action'), $(this).serialize(), function(comment){
-                        if($('ul.replies', parent).length == 0){ $(parent).append('<ul class="replies"/>');}
-                        $('ul.replies', parent).append(comment);
-                        $('body').css({'cursor': 'auto'});
-                        $('.notify', frm).text('');
-                        frm.remove();
-                        apply_hooks();
-                    });
-                    $(frm).ajaxError(function(ev, xhr, req, error_message){
-                        listErrors(frm, $.parseJSON(xhr.responseText));
-                        $('body').css({'cursor': 'auto'});
-                        $('.notify', frm).text('');
+                    $('input[name="csrfmiddlewaretoken"]', this).val(opts.csrf_token);
+                    $.ajax({
+                        type: 'POST',
+                        timeout: opts.timeout,
+                        url: $(this).attr('action'),
+                        data: $(this).serialize(),
+                        error: function(jqXHR, textStatus, errorThrown){
+                            handleError(frm, jqXHR, textStatus, errorThrown);
+                        },
+                        success: function(comment){
+                            if($('ul.replies', parent).length == 0){ $(parent).append('<ul class="replies"/>');}
+                            $('ul.replies', parent).append(comment);
+                            $('body').css({'cursor': 'auto'});
+                            $('.notify', frm).text('');
+                            frm.remove();
+                            apply_hooks();
+                        }
                     });
                     return false;
                 });
@@ -265,19 +327,7 @@
 
     function init(){
 
-
-        // showall is enable for everyone
-        $('a.showall').click(function(){
-            var parent = $(this).parent();
-            if($('ul.replies', parent).length == 0){ $(parent).append('<ul class="replies"/>');};
-            var ul = $('ul.replies', parent).first();
-            $.get($(this).attr('href'), function(data){
-                $(ul).html(data);
-                apply_hooks();
-            });
-            $(this).remove();
-            return false;
-        });
+        hijax();
 
         apply_hooks();
 
@@ -288,31 +338,37 @@
             $(frm).submit(function(){
                 $('body').css({'cursor': 'wait'});
                 $('.notify', frm).text('Posting your comment...');
-                $('input[name="csrfmiddlewaretoken"]').val(opts.csrf_token);
+                $('input[name="csrfmiddlewaretoken"]', this).val(opts.csrf_token);
                 // clean up any pre-existing errors (from previous submit)
                 $('ul.errors', frm).remove();
-                $.post($(this).attr('action'), $(this).serialize(), function(data){
-                    $('body').css({'cursor': 'auto'});
-                    $('.notify', frm).text('');
-                    if( $('#tcc ul.comments li').length == 0){
-                        // There were no comments so far, so this is the first comment
-                        // Remove the 'no comments yet' message
-                        $('#tcc ul.comments').children().not('form').remove();
-                        $('#tcc ul.comments').append(data);
-                    } else {
-                        $('#tcc ul.comments li').first().before(data);
+                $.ajax({
+                    type: 'POST',
+                    timeout: opts.timeout,
+                    url: $(this).attr('action'), 
+                    data: $(this).serialize(),
+                    context: frm,
+                    error: function(jqXHR, textStatus, errorThrown){
+                        handleError(frm, jqXHR, textStatus, errorThrown);
+                    },
+                    success: function(data){
+                        $('body').css({'cursor': 'auto'});
+                        $('.notify', frm).text('');
+                        if( $('#tcc ul.comments li').length == 0){
+                            // There were no comments so far, so this is the first comment
+                            // Remove the 'no comments yet' message
+                            $('#tcc ul.comments').children().not('form').remove();
+                            $('#tcc ul.comments').append(data);
+                        } else {
+                            $('#tcc ul.comments li').first().before(data);
+                        }
+                        apply_hooks();
+                        $('#id_comment', frm).val('');
+                        var latest = $('#tcc ul.comments li.comment').first();
+                        if(!isScrolledIntoView(latest)){
+                            $(document).scrollTop($(latest).offset().top-300);
+                        };
+
                     }
-                    apply_hooks();
-                    $('#id_comment', frm).val('');
-                    var latest = $('#tcc ul.comments li.comment').first();
-                    if(!isScrolledIntoView(latest)){
-                        $(document).scrollTop($(latest).offset().top-300);
-                    };
-                });
-                $(frm).ajaxError(function(ev, xhr, req, error_message){
-                    $('body').css({'cursor': 'auto'});
-                    $('.notify', frm).text('');
-                    listErrors(frm, $.parseJSON(xhr.responseText));
                 });
                 return false;
             });
